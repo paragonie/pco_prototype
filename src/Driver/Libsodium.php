@@ -3,6 +3,8 @@ namespace PCO\Driver;
 
 class Libsodium implements DriverInterface
 {
+    const DRIVER_ID = 1;
+    
     /**
      * Is the driver loaded?
      * 

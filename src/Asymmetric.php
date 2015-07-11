@@ -3,6 +3,12 @@ namespace PCO;
 
 class Asymmetric extends Common
 {
+    public function __construct($dsn = '')
+    {
+        parent::__construct($dsn);
+        $this->driverID &= 0x80; // We set the first bit to 1 when asymmetric
+    }
+    
     /**
      * Diffie-Hellman, ECDHE, etc.
      * 
