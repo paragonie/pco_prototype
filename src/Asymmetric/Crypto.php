@@ -1,5 +1,7 @@
 <?php
-namespace PCO;
+namespace Php\Crypto;
+
+use Php\Crypto\Common;
 
 class Asymmetric extends Common
 {

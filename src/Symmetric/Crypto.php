@@ -1,9 +1,10 @@
 <?php
-namespace PCO;
+namespace Php\Crypto\Symmetric;
 
-class Symmetric extends Common
+use Php\Crypto\Common;
+
+class Crypto extends Common
 {
-    
     /**
      * Encrypt then authenticate a string or resource
      * 

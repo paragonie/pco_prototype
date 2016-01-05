@@ -1,7 +1,9 @@
 <?php
-namespace PCO;
+namespace Php\Crypto;
 
-class Common
+use \Php\Crypto\Exception\DriverNotFoundException;
+
+abstract class Common
 {
     const DRIVER_OPENSSL = 'openssl';
     const DRIVER_SODIUM = 'libsodium';
@@ -12,7 +14,7 @@ class Common
     protected $internalDriver;
     
     // For the message format
-    private $driver;
+    private $driversLoaded;
     
     /**
      * Is the ciphertext hex-encoded? Used both for input and output
@@ -23,44 +25,25 @@ class Common
      */
     const CIPHER_RAW = 'raw'; // (default)
     
-    public function __construct($dsn = '')
+    public function __construct(array $options = [])
     {
         // I can't think of a better way to load this map right now. Pretty sure
         // the PECL extension won't need this ugly hack.
-        $this->driver = [
-            \PCO\Driver\Libsodium::DRIVER_ID => self::DRIVER_SODIUM,
-            \PCO\Driver\Openssl::DRIVER_ID => self::DRIVER_OPENSSL
+        $this->driversLoaded = [
+            \Php\Crypto\Driver\Libsodium::DRIVER_ID => self::DRIVER_SODIUM,
+            \Php\Crypto\Driver\Openssl::DRIVER_ID => self::DRIVER_OPENSSL
         ];
-        
-        if (empty($dsn)) {
-            if (\PCO\Driver\Libsodium::isLoaded()) {
-                $driver = self::DRIVER_SODIUM;
-            } elseif (\PCO\Driver\OpenSSL::isLoaded()) {
-                $driver = self::DRIVER_OPENSSL;
-            } else {
-                throw new \PCO\Exception\DriverNotFound;
-            }
+        if (!\array_key_exists('driver', $options)) {
+            throw new DriverNotFoundException;
         }
-        switch ($driver) {
-            case self::DRIVER_OPENSSL:
-                // use openssl for underlying crypto
-                if (!\PCO\Driver\OpenSSL::isLoaded()) {
-                    throw new \PCO\Exception\DriverNotFound;
-                }
-                $this->driverID = \PCO\Driver\OpenSSL::DRIVER_ID;
-                $this->internalDriver = new \PCO\Driver\OpenSSL;
-                break;
-            case self::DRIVER_SODIUM:
-                // use libsodium for underlying crypto
-                if (!\PCO\Driver\Libsodium::isLoaded()) {
-                    throw new \PCO\Exception\DriverNotFound;
-                }
-                $this->driverID = \PCO\Driver\Libsodium::DRIVER_ID;
-                $this->internalDriver = new \PCO\Driver\Libsodium;
-                break;
-            default:
-                // throw catchable fatal error
-                throw new \PCO\Exception\DriverNotFound;
+        
+        if (\in_array($options['driver'], $this->driversLoaded)) {
+            throw new DriverNotFoundException;
+        }
+        
+        switch ($options['driver']) {
+            case \Php\Crypto\Driver\Libsodium::DRIVER_ID:
+                $this->internalDriver = new \Php\Crypto\Driver\Libsodium;
         }
     }
     
@@ -74,7 +57,7 @@ class Common
     public function processHeader($message)
     {
         if ($message[3] !== $message[0] ^ $message[1] ^ $message[2]) {
-            throw new \PCO\Exception\ChecksumFailed;
+            throw new \Php\Crypto\Exception\ChecksumFailed;
         }
         $version = \implode('.', [
                 (int) \ord($message[0]),
@@ -83,7 +66,7 @@ class Common
         
         $asymmetric = (1 & (\ord($message[2]) >> 7)) === 1;
         $driver_id = \ord($message[2] & 0x7F);
-        $driver = $this->driver[$driver_id];
+        $driver = $this->driversLoaded[$driver_id];
         
         return [
             'version' => $version,
