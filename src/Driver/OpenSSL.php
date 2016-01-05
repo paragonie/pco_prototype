@@ -27,12 +27,12 @@ class OpenSSL implements DriverInterface
     /**
      * Encrypt a message using asymmetric cryptography
      * 
-     * @param string $plaintext
+     * @param string|resource $plaintext
      * @param EncryptionSecretKey $secretKey
      * @param EncryptionPublicKey $publicKey
      */
     public function encryptAsymmetric(
-        string $plaintext,
+        $plaintext,
         EncryptionSecretKey $secretKey = null, 
         EncryptionPublicKey $publicKey = null
     ): string {
@@ -42,13 +42,13 @@ class OpenSSL implements DriverInterface
     /**
      * Decrypt a message using asymmetric cryptography
      * 
-     * @param string $ciphertext
+     * @param string|resource $ciphertext
      * @param EncryptionSecretKey $secretKey
      * @param EncryptionPublicKey $publicKey
      * @return string
      */
     public function decryptAsymmetric(
-        string $ciphertext,
+        $ciphertext,
         EncryptionSecretKey $secretKey = null,
         EncryptionPublicKey $publicKey = null
     ): string {
@@ -63,7 +63,7 @@ class OpenSSL implements DriverInterface
      * @return string
      */
     public function sealAsymmetric(
-        string $message,
+        $message,
         EncryptionPublicKey $publicKey
     ): string {
         
@@ -77,7 +77,7 @@ class OpenSSL implements DriverInterface
      * @return string
      */
     public function unsealAsymmetric(
-        string $sealed,
+        $sealed,
         EncryptionSecretKey $secretKey
     ): string {
         
@@ -86,12 +86,12 @@ class OpenSSL implements DriverInterface
     /**
      * Sign a message, using your secret key
      * 
-     * @param string $sealed
+     * @param string|resource $sealed
      * @param EncryptionPublicKey $publicKey
      * @return string
      */
     public function signAsymmetric(
-        string $message,
+        $message,
         SignatureSecretKey $secretKey
     ): string {
         
@@ -100,13 +100,13 @@ class OpenSSL implements DriverInterface
     /**
      * Sign a message, using your secret key
      * 
-     * @param string $sealed
+     * @param string|resource $sealed
      * @param EncryptionPublicKey $publicKey
      * @param string $signature
      * @return string
      */
     public function verifyAsymmetric(
-        string $message, 
+        string|resource $message, 
         SignaturePublicKey $publicKey,
         string $signature
     ): bool {
@@ -126,14 +126,14 @@ class OpenSSL implements DriverInterface
     /**
      * Authenticated Encryption with Associated Data (Encrypt)
      * 
-     * @param string $plaintext
+     * @param string|resource $plaintext
      * @param string $ad
      * @param EncryptionKey $key
      * 
      * @return string
      */
     public function aeadEncryptSymmetric(
-        string $plaintext,
+        $plaintext,
         string $ad = '',
         EncryptionKey $key
     ): string {
@@ -144,14 +144,14 @@ class OpenSSL implements DriverInterface
     /**
      * Authenticated Encryption with Associated Data (Decrypt)
      * 
-     * @param string $plaintext
+     * @param string|resource $ciphertext
      * @param string $ad
      * @param EncryptionKey $key
      * 
      * @return string
      */
     public function aeadDecryptSymmetric(
-        string $ciphertext,
+        $ciphertext,
         string $ad = '',
         EncryptionKey $key
     ): string {
@@ -161,12 +161,12 @@ class OpenSSL implements DriverInterface
     /**
      * Authenticate a message
      * 
-     * @param string $plaintext
+     * @param string|resource $plaintext
      * @param AuthenticationKey $key
      * @return string
      */
     public function authSymmetric(
-        string $plaintext,
+        $plaintext,
         AuthenticationKey $key
     ): string {
         
@@ -175,14 +175,14 @@ class OpenSSL implements DriverInterface
     /**
      * Verify a symmetric-key cryptographic authentication tag
      * 
-     * @param string $plaintext
+     * @param string|resource $plaintext
      * @param AuthenticationKey $key
        @param string $authenticationTag
      * 
      * @return bool
      */
     public function verifySymmetric(
-        string $plaintext,
+        $plaintext,
         AuthenticationKey $key,
         string $authenticationTag
     ): bool {
@@ -192,7 +192,7 @@ class OpenSSL implements DriverInterface
     /**
      * Message encryption (secret-key)
      * 
-     * @param string $plaintext
+     * @param string|resource $plaintext
      * @param EncryptionKey $key
      * 
      * @return string
@@ -207,13 +207,13 @@ class OpenSSL implements DriverInterface
     /**
      * Message decryption (secret-key)
      * 
-     * @param string $plaintext
+     * @param string|resource $plaintext
      * @param EncryptionKey $key
      * 
      * @return string
      */
     public function decryptSymmetric(
-        string $ciphertext,
+        $ciphertext,
         EncryptionKey $key
     ): string {
         
