@@ -29,7 +29,8 @@ interface DriverInterface
     public function encryptAsymmetric(
         string $plaintext,
         EncryptionSecretKey $secretKey = null, 
-        EncryptionPublicKey $publicKey = null
+        EncryptionPublicKey $publicKey = null,
+        array $options = []
     ): string;
     
     /**
@@ -43,7 +44,8 @@ interface DriverInterface
     public function decryptAsymmetric(
         string $ciphertext,
         EncryptionSecretKey $secretKey = null,
-        EncryptionPublicKey $publicKey = null
+        EncryptionPublicKey $publicKey = null,
+        array $options = []
     ): string;
     
     /**
@@ -55,7 +57,8 @@ interface DriverInterface
      */
     public function sealAsymmetric(
         string $message,
-        EncryptionPublicKey $publicKey
+        EncryptionPublicKey $publicKey,
+        array $options = []
     ): string;
     
     /**
@@ -67,7 +70,8 @@ interface DriverInterface
      */
     public function unsealAsymmetric(
         string $sealed,
-        EncryptionSecretKey $secretKey
+        EncryptionSecretKey $secretKey,
+        array $options = []
     ): string;
     
     /**
@@ -79,7 +83,8 @@ interface DriverInterface
      */
     public function signAsymmetric(
         string $message,
-        SignatureSecretKey $secretKey
+        SignatureSecretKey $secretKey,
+        array $options = []
     ): string;
     
     /**
@@ -93,7 +98,8 @@ interface DriverInterface
     public function verifyAsymmetric(
         string $message, 
         SignaturePublicKey $publicKey,
-        string $signature
+        string $signature,
+        array $options = []
     ): bool;
     
     /**
@@ -101,7 +107,8 @@ interface DriverInterface
      */
     public function getSharedSecret(
         Key $keyA,
-        Key $keyB
+        Key $keyB,
+        array $options = []
     ): Key;
     
     /**
@@ -116,7 +123,8 @@ interface DriverInterface
     public function aeadEncryptSymmetric(
         string $plaintext,
         string $ad = '',
-        EncryptionKey $key
+        EncryptionKey $key,
+        array $options = []
     ): string;
     
     
@@ -132,7 +140,8 @@ interface DriverInterface
     public function aeadDecryptSymmetric(
         string $ciphertext,
         string $ad = '',
-        EncryptionKey $key
+        EncryptionKey $key,
+        array $options = []
     ): string;
     
     /**
@@ -144,7 +153,8 @@ interface DriverInterface
      */
     public function authSymmetric(
         string $plaintext,
-        AuthenticationKey $key
+        AuthenticationKey $key,
+        array $options = []
     ): string;
     
     /**
@@ -159,7 +169,8 @@ interface DriverInterface
     public function verifySymmetric(
         string $plaintext,
         AuthenticationKey $key,
-        string $authenticationTag
+        string $authenticationTag,
+        array $options = []
     ): bool;
     
     /**
@@ -172,7 +183,8 @@ interface DriverInterface
      */
     public function encryptSymmetric(
         $plaintext,
-        EncryptionKey $key
+        EncryptionKey $key,
+        array $options = []
     ): string;
 
     /**
@@ -185,6 +197,7 @@ interface DriverInterface
      */
     public function decryptSymmetric(
         string $ciphertext,
-        EncryptionKey $key
+        EncryptionKey $key,
+        array $options = []
     ): string;
 }

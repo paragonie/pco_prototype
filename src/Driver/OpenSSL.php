@@ -34,7 +34,8 @@ class OpenSSL implements DriverInterface
     public function encryptAsymmetric(
         $plaintext,
         EncryptionSecretKey $secretKey = null, 
-        EncryptionPublicKey $publicKey = null
+        EncryptionPublicKey $publicKey = null,
+        array $options = []
     ): string {
         
     }
@@ -50,7 +51,8 @@ class OpenSSL implements DriverInterface
     public function decryptAsymmetric(
         $ciphertext,
         EncryptionSecretKey $secretKey = null,
-        EncryptionPublicKey $publicKey = null
+        EncryptionPublicKey $publicKey = null,
+        array $options = []
     ): string {
         
     }
@@ -64,7 +66,8 @@ class OpenSSL implements DriverInterface
      */
     public function sealAsymmetric(
         $message,
-        EncryptionPublicKey $publicKey
+        EncryptionPublicKey $publicKey,
+        array $options = []
     ): string {
         
     }
@@ -78,7 +81,8 @@ class OpenSSL implements DriverInterface
      */
     public function unsealAsymmetric(
         $sealed,
-        EncryptionSecretKey $secretKey
+        EncryptionSecretKey $secretKey,
+        array $options = []
     ): string {
         
     }
@@ -92,7 +96,8 @@ class OpenSSL implements DriverInterface
      */
     public function signAsymmetric(
         $message,
-        SignatureSecretKey $secretKey
+        SignatureSecretKey $secretKey,
+        array $options = []
     ): string {
         
     }
@@ -108,7 +113,8 @@ class OpenSSL implements DriverInterface
     public function verifyAsymmetric(
         string|resource $message, 
         SignaturePublicKey $publicKey,
-        string $signature
+        string $signature,
+        array $options = []
     ): bool {
         
     }
@@ -118,7 +124,8 @@ class OpenSSL implements DriverInterface
      */
     public function getSharedSecret(
         Key $keyA,
-        Key $keyB
+        Key $keyB,
+        array $options = []
     ): Key {
         
     }
@@ -135,7 +142,8 @@ class OpenSSL implements DriverInterface
     public function aeadEncryptSymmetric(
         $plaintext,
         string $ad = '',
-        EncryptionKey $key
+        EncryptionKey $key,
+        array $options = []
     ): string {
         
     }
@@ -153,7 +161,8 @@ class OpenSSL implements DriverInterface
     public function aeadDecryptSymmetric(
         $ciphertext,
         string $ad = '',
-        EncryptionKey $key
+        EncryptionKey $key,
+        array $options = []
     ): string {
         
     }
@@ -167,7 +176,8 @@ class OpenSSL implements DriverInterface
      */
     public function authSymmetric(
         $plaintext,
-        AuthenticationKey $key
+        AuthenticationKey $key,
+        array $options = []
     ): string {
         
     }
@@ -177,14 +187,15 @@ class OpenSSL implements DriverInterface
      * 
      * @param string|resource $plaintext
      * @param AuthenticationKey $key
-       @param string $authenticationTag
+     * @param string $authenticationTag
      * 
      * @return bool
      */
     public function verifySymmetric(
         $plaintext,
         AuthenticationKey $key,
-        string $authenticationTag
+        string $authenticationTag,
+        array $options = []
     ): bool {
         
     }
@@ -199,7 +210,8 @@ class OpenSSL implements DriverInterface
      */
     public function encryptSymmetric(
         $plaintext,
-        EncryptionKey $key
+        EncryptionKey $key,
+        array $options = []
     ): string {
         
     }
@@ -214,7 +226,8 @@ class OpenSSL implements DriverInterface
      */
     public function decryptSymmetric(
         $ciphertext,
-        EncryptionKey $key
+        EncryptionKey $key,
+        array $options = []
     ): string {
         
     }
