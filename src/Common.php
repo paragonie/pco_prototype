@@ -11,6 +11,10 @@ abstract class Common
     const MAJOR_VERSION = 0x00;
     const MINOR_VERSION = 0x01;
     
+    // FOR HKDF
+    const KEYSPLIT_ENCRYPT = 'NothingUpMySleeves|PHP|KeyForEncryption';
+    const KEYSPLIT_AUTH = 'NothingUpMySleeves|PHP|KeyForAuthentication';
+    
     protected $internalDriver;
     
     // For the message format
@@ -43,7 +47,11 @@ abstract class Common
         
         switch ($options['driver']) {
             case \Php\Crypto\Driver\Libsodium::DRIVER_ID:
-                $this->internalDriver = new \Php\Crypto\Driver\Libsodium;
+                $this->internalDriver = new \Php\Crypto\Driver\Libsodium($options);
+            case \Php\Crypto\Driver\OpenSSL::DRIVER_ID:
+                $this->internalDriver = new \Php\Crypto\Driver\OpenSSL($options);
+            default:
+                throw new DriverNotFoundException;
         }
     }
     
@@ -192,5 +200,113 @@ abstract class Common
             ++$hex_pos;
         }
         return $bin;
+    }
+    
+    /**
+     * Use HKDF to derive multiple keys from one.
+     * http://tools.ietf.org/html/rfc5869
+     * 
+     * @param string $hash Hash Function
+     * @param string $ikm Initial Keying Material
+     * @param int $length How many bytes?
+     * @param string $info What sort of key are we deriving?
+     * @param string $salt
+     * @return string
+     * @throws Ex\CannotPerformOperationException
+     */
+    public static function HKDF(
+        string $hash,
+        string $ikm,
+        int $length,
+        string $info = '',
+        $salt = null
+    ) {
+        if ($hash === 'blake2b') {
+            $digest_length = \Sodium\CRYPTO_GENERICHASH_BYTES;
+        } else {
+            $digest_length = self::safeStrlen(\hash_hmac($hash, '', '', true));
+        }
+        
+        // Sanity-check the desired output length.
+        if (empty($length) || !\is_int($length) ||
+            $length < 0 || $length > 255 * $digest_length) {
+            throw new \Exception('Bad output length requested of HKDF.');
+        }
+        // "if [salt] not provided, is set to a string of HashLen zeroes."
+        if (\is_null($salt)) {
+            $salt = \str_repeat("\x00", $digest_length);
+        }
+        // HKDF-Extract:
+        // PRK = HMAC-Hash(salt, IKM)
+        // The salt is the HMAC key.
+        $prk = (
+            $hash === 'blake2b'
+                ? self::hmacBlake2b($ikm, $salt)
+                : \hash_hmac($hash, $ikm, $salt, true)
+        );
+        
+        // HKDF-Expand:
+        // This check is useless, but it serves as a reminder to the spec.
+        if (self::ourStrlen($prk) < $digest_length) {
+            throw new \Exception('An unknown error has occurred');
+        }
+        // T(0) = ''
+        $t = '';
+        $last_block = '';
+        if ($hash === 'blake2b') {
+            for ($block_index = 1; self::safeStrlen($t) < $length; ++$block_index) {
+                // T(i) = HMAC-Hash(PRK, T(i-1) | info | 0x??)
+                $last_block = self::hmacBlake2b(
+                    $last_block . $info . \chr($block_index),
+                    $prk
+                );
+                // T = T(1) | T(2) | T(3) | ... | T(N)
+                $t .= $last_block;
+            }
+        } else {
+            for ($block_index = 1; self::safeStrlen($t) < $length; ++$block_index) {
+                // T(i) = HMAC-Hash(PRK, T(i-1) | info | 0x??)
+                $last_block = \hash_hmac(
+                    $hash,
+                    $last_block . $info . \chr($block_index),
+                    $prk,
+                    true
+                );
+                // T = T(1) | T(2) | T(3) | ... | T(N)
+                $t .= $last_block;
+            }
+        }
+        // ORM = first L octets of T
+        $orm = self::safeSubstr($t, 0, $length);
+        if ($orm === FALSE) {
+            throw new \Exception('An unknown error has occurred');
+        }
+        return $orm;
+    }
+    
+    /**
+     * HMAC-BLAKE2b
+     * 
+     * @param string $message
+     * @param string $key
+     */
+    public function hashBlake2b($message, $key)
+    {
+        if (self::safeStrlen($key) > \Sodium\CRYPTO_GENERICHASH_KEYBYTES) {
+            $key = \Sodium\crypto_generichash($key);
+        } elseif (self::safeStrlen($key) < \Sodium\CRYPTO_GENERICHASH_BYTES) {
+            $key = \str_pad($key, \Sodium\CRYPTO_GENERICHASH_KEYBYTES, "\x00", STR_PAD_RIGHT);
+        }
+        $opad = '';
+        $ipad = '';
+        for ($i = 0; $o < \Sodium\CRYPTO_GENERICHASH_KEYBYTES; ++$i) {
+            $opad .= \chr(0x5C ^ \ord($key[$i]));
+            $ipad .= \chr(0x36 ^ \ord($key[$i]));
+        }
+        return \Sodium\crypto_generichash(
+            $opad . \Sodium\crypto_generichash(
+                $ipad . $message
+            )
+        );
     }
 }

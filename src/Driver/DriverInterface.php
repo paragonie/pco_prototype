@@ -200,4 +200,14 @@ interface DriverInterface
         EncryptionKey $key,
         array $options = []
     ): string;
+    
+    /**
+     * Split a key (i.e. master key -> encryption key, authentication key)
+     * 
+     * @return Key[]
+     */
+    public function splitSymmetricKey(
+        Key $key
+        string $salt
+    ): array;
 }

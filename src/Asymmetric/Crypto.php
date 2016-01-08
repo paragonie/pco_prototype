@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace Php\Crypto;
 
 use Php\Crypto\Common;
@@ -17,15 +18,15 @@ class Asymmetric extends Common
      * Get a shared secret from a private key you possess and a public key for
      * the intended message recipient
      * 
-     * @param string $privatekey
-     * @param string $publickey
+     * @param Key $secretKey
+     * @param Key $publicKey
      * @param array $options
      * 
      * @return string
      */
-    public function getSharedSecret($privatekey, $publickey, $options = [])
+    public function getSharedSecret(Key $secretKey, Key $publicKey, $options = [])
     {
-        
+        return $this->internalDriver->getSharedSecret($secretKey, $publicKey, $options);
     }
     
     /**
@@ -33,15 +34,24 @@ class Asymmetric extends Common
      * Seal then sign
      * 
      * @param string|resource $source Plaintext (or resource pointing to, e.g., a file)
-     * @param string $ourPrivateKey Our private key
-     * @param string $theirPublicKey Their public key
+     * @param EncryptionSecretKey $secretKey
+     * @param EncryptionPublicKey $publicKey
      * @param array $options
      * 
      * @return string
      */
-    public function encrypt($source, $ourPrivateKey, $theirPublicKey, $options = [])
-    {
-        
+    public function encrypt(
+        $source,
+        EncryptionSecretKey $secretKey = null,
+        EncryptionPublicKey $publicKey = null,
+        $options = []
+    ) {
+        return $this->internalDriver->encryptAsymmetric(
+            $source,
+            $secretKey,
+            $publicKey,
+            $options
+        );
     }
     
     /**
@@ -49,57 +59,66 @@ class Asymmetric extends Common
      * Verify then unseal
      * 
      * @param string|resource $source Ciphertext (or resource pointing to, e.g., a file)
-     * @param string $ourPrivateKey Our private key
-     * @param string $theirPublicKey Their public key
+     * @param EncryptionSecretKey $secretKey Our secret key
+     * @param EncryptionPublicKey $publicKey the other party's public key
      * @param array $options
      * 
      * @return string
      */
-    public function decrypt($source, $ourPrivateKey, $theirPublicKey, $options = [])
-    {
-        
+    public function decrypt(
+        $source,
+        EncryptionSecretKey $secretKey = null,
+        EncryptionPublicKey $publicKey = null,
+        $options = []
+    ) {
+        return $this->internalDriver->decryptAsymmetric(
+            $source,
+            $secretKey,
+            $publicKey,
+            $options
+        );
     }
     
     /**
      * Encrypt a message with a target users' public key
      * 
-     * @param string|resource $string Message to encrypt (string or resource for a file)
-     * @param string $publicKey
+     * @param string|resource $source Message to encrypt (string or resource for a file)
+     * @param EncryptionPublicKey $publicKey the other party's public key
      * @param array $options
      * 
      * @return string
      */
-    public function seal($source, $publicKey, $options = [])
+    public function seal($source, EncryptionPublicKey $publicKey, $options = [])
     {
-        
+        return $this->internalDriver->seal($source, $publicKey, $options);
     }
     
     /**
      * Decrypt a sealed message with our private key
      * 
-     * @param string $string|resource Encrypted message (string or resource for a file)
-     * @param string $privateKey
+     * @param string|resource $source Encrypted message (string or resource for a file)
+     * @param EncryptionSecretKey $secretKey Our secret key
      * @param array $options
      * 
      * @return string
      */
-    public function unseal($source, $privateKey, $options = [])
+    public function unseal($source, EncryptionSecretKey $secretKey, $options = [])
     {
-        
+        return $this->internalDriver->unseal($source, $secretKey, $options);
     }
     
     /**
      * Sign a message with our private key
      * 
      * @param string|resource $message Message to sign (string or resource for a file)
-     * @param string $privatekey
+     * @param SignatureSecretKey $privateKey
      * @param array $options
      * 
      * @return string Signature (detached)
      */
-    public function sign($message, $privatekey, $options = [])
+    public function sign($message, SignatureSecretKey $privateKey, $options = [])
     {
-        
+        return $this->internalDriver->sign($message, $privateKey, $options);
     }
     
     /**
@@ -110,10 +129,10 @@ class Asymmetric extends Common
      * @param string $signature
      * @param array $options
      * 
-     * @return boolean
+     * @return bool
      */
-    public function verify($message, $publickey, $signature, $options = [])
+    public function verify($message, SignaturePublicKey $publicKey, string $signature, $options = [])
     {
-        
+        return $this->internalDriver->verify($message, $publicKey, $signature, $options);
     }
 }

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace Php\Crypto\Symmetric;
 
 use Php\Crypto\{
@@ -29,7 +30,7 @@ class Crypto extends Common
      * @param string $signature
      * @param array $options
      */
-    public function verify($source, AuthenticationKey $masterKey, $signature, $options = [])
+    public function verify($source, AuthenticationKey $masterKey, string $signature, $options = [])
     {
         return $this->internalDriver->verifySymmetric($source, $masterKey, $signature, $options);
     }
@@ -72,7 +73,7 @@ class Crypto extends Common
      * 
      * @return array: [$ciphertext, $additional_data]
      */
-    public function aeadEncrypt($source, EncryptionKey $masterKey, $additional_data = '', $options = [])
+    public function aeadEncrypt($source, EncryptionKey $masterKey, string $additional_data = '', $options = [])
     {
         return $this->internalDriver->aeadEncryptSymmetric($source, $masterKey, $additional_data, $options);
     }
@@ -87,7 +88,7 @@ class Crypto extends Common
      * 
      * @return string
      */
-    public function aeadDecrypt($source, EncryptionKey $masterKey, $additional_data = '', $options = [])
+    public function aeadDecrypt($source, EncryptionKey $masterKey, string $additional_data = '', $options = [])
     {
         return $this->internalDriver->aeadDecryptSymmetric($source, $masterKey, $additional_data, $options);
     }

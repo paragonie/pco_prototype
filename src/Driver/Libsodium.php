@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace Php\Crypto\Driver;
 
 use Php\Crypto\{
@@ -6,6 +7,7 @@ use Php\Crypto\{
     Asymmetric\EncryptionSecretKey,
     Asymmetric\SignaturePublicKey,
     Asymmetric\SignatureSecretKey,
+    Common,
     Symmetric\AuthenticationKey,
     Symmetric\EncryptionKey
 };
@@ -13,6 +15,13 @@ use Php\Crypto\{
 class Libsodium implements DriverInterface
 {
     const DRIVER_ID = 1;
+    
+    protected $config = [];
+    
+    public function __construct(array $options = [])
+    {
+        // LOL NOPE, we use libsodium's defaults!
+    }
     
     /**
      * Is the driver loaded?
@@ -30,10 +39,13 @@ class Libsodium implements DriverInterface
      * @param string|resource $plaintext
      * @param EncryptionSecretKey $secretKey
      * @param EncryptionPublicKey $publicKey
+     * @param array $options
+     * 
+     * @return string
      */
     public function encryptAsymmetric(
         $plaintext,
-        EncryptionSecretKey $secretKey = null, 
+        EncryptionSecretKey $secretKey = null,
         EncryptionPublicKey $publicKey = null,
         array $options = []
     ): string {
@@ -213,7 +225,40 @@ class Libsodium implements DriverInterface
         EncryptionKey $key,
         array $options = []
     ): string {
+        // Build our header:
+            // [VV][VV]:
+            $message = \chr(Common::VERSION_MAJOR);
+            $message .= \chr(Common::VERSION_MAJOR);
+            // [DD]:
+            $message .= \chr(0x7F & self::DRIVER_ID);
+            // [CC]:
+            $message .= \chr(Common::VERSION_MAJOR ^ Common::VERSION_MINOR ^ (0x7F & self::DRIVER_ID));
         
+        // Salt:
+            $salt = \random_bytes(\Sodium\CRYPTO_GENERICHASH_KEYBYTES);
+        
+        // Split keys:
+            list($encKey, $authKey) = $this->splitSymmetricKey($key, $salt);
+            $message .= $salt; // HKDF salt
+        
+        // Nonce:
+            $nonce = \random_bytes(\Sodium\CRYPTO_STREAM_NONCEBYTES);
+            $message .= $nonce; // Nonce for the stream cipher
+        
+        // Encrypt:
+            $message .= \Sodium\crypto_stream_xor(
+                $plaintext,
+                $nonce,
+                $encKey->getRawBytes()
+            );
+            unset($encKey);
+        
+        // Authenticate:
+            $message .= \Sodium\crypto_auth($message, $authKey->getRawBytes());
+            unset($authKey);
+        
+        // Return:
+        return $message;
     }
 
     /**
@@ -230,5 +275,39 @@ class Libsodium implements DriverInterface
         array $options = []
     ): string {
         
+    }
+    
+    /**
+     * Split a key (i.e. master key -> encryption key, authentication key)
+     * 
+     * @return Key[]
+     */
+    public function splitSymmetricKey(
+        Key $key
+        string $salt
+    ): array {
+        return [
+            new EncryptionKey(
+                Common::HKDF(
+                    'blake2b',
+                    $key->getRawBytes(),
+                    \Sodium\CRYPTO_STREAM_KEYBYTES,
+                    Common::KEYSPLIT_ENCRYPT,
+                    $salt
+                ),
+                Common::DRIVER_SODIUM
+            ),
+            
+            new AuthenticationKey(
+                Common::HKDF(
+                    'blake2b',
+                    $key->getRawBytes(),
+                    \Sodium\CRYPTO_AUTH_KEYBYTES,
+                    Common::KEYSPLIT_AUTH,
+                    $salt
+                ),
+                Common::DRIVER_SODIUM
+            )
+        ];
     }
 }
