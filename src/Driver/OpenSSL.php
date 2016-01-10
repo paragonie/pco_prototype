@@ -8,7 +8,10 @@ use Php\Crypto\{
     Asymmetric\SignaturePublicKey,
     Asymmetric\SignatureSecretKey,
     Symmetric\AuthenticationKey,
-    Symmetric\EncryptionKey
+    Symmetric\EncryptionKey,
+    Common,
+    Key,
+    KeyFactory
 };
 
 class OpenSSL implements DriverInterface
@@ -53,7 +56,10 @@ class OpenSSL implements DriverInterface
         EncryptionPublicKey $publicKey = null,
         array $options = []
     ): string {
-        $sharedSecret = $this->getSharedSecret($secretKey, $publicKey);
+        $sharedSecret = $this->getSharedSecret(
+            $secretKey,
+            $publicKey
+        );
         return $this->encryptSymmetric(
             $plaintext,
             $sharedSecret,
@@ -91,16 +97,73 @@ class OpenSSL implements DriverInterface
      * @return string
      */
     public function sealAsymmetric(
-        $message,
+        $plaintext,
         EncryptionPublicKey $publicKey,
         array $options = []
     ): string {
         /**
          * 1. Generate a random DH private key.
-         * 2. Calculate the shared secret.
-         * 3. Encrypt with symmetric-key crypto.
-         * 4. Authenticate.
          */
+        list($eph_secret, $eph_public) = KeyFactory::generateEncryptionKeyPair(
+            Common::DRIVER_OPENSSL
+        );
+
+        /**
+         * 2. Calculate the shared secret.
+         */
+        $sharedSecret = $this->getSharedSecret($eph_secret, $publicKey);
+
+        /**
+         * 3. Encrypt with symmetric-key crypto.
+         */
+
+        // Build our header:
+        // [VV][VV]:
+        $message = \chr(Common::VERSION_MAJOR);
+        $message .= \chr(Common::VERSION_MINOR);
+        // [DD]: Make sure leftmost bit is 1 because we're sealing
+        $message .= \chr(0x80 | (self::DRIVER_ID & 0x7f));
+        // [CC]:
+        $message .= \chr(Common::VERSION_MAJOR ^ Common::VERSION_MINOR ^ (0x80 | (self::DRIVER_ID & 0x7f)));
+
+        $message .= $eph_public->getRawBytes();
+
+        // Salt:
+        $salt = \random_bytes(
+            Common::safeStrlen(\hash($this->config['hash'], '', true))
+        );
+
+        // Split keys:
+        list($encKey, $authKey) = $this->splitSymmetricKey($sharedSecret, $salt);
+        $message .= $salt; // HKDF salt
+
+        // Nonce:
+        $nonce = \random_bytes(\openssl_cipher_iv_length($this->config['cipher']));
+        $message .= $nonce; // Nonce for the stream cipher
+
+        // Encrypt:
+        $message .= \openssl_encrypt(
+            $plaintext,
+            $this->config['cipher'] . '-ctr',
+            $encKey->getRawBytes(),
+            OPENSSL_RAW_DATA | OPENSSL_NO_PADDING,
+            $nonce
+        );
+        unset($encKey);
+
+        /**
+         * 4. Authenticate:
+         */
+        $message .= \hash_hmac(
+            $this->config['hash'],
+            $message,
+            $authKey->getRawBytes(),
+            true
+        );
+        unset($authKey);
+
+        // Return:
+        return $message;
     }
     
     /**
@@ -119,7 +182,7 @@ class OpenSSL implements DriverInterface
          * 1. Read public key from ciphertext.
          * 2. Calculate the shared secret with our secret key.
          * 3. Verify authentication tag.
-         * 3. Decrypt with symmetric-key crypto.
+         * 4. Decrypt with symmetric-key crypto.
          */
     }
     
@@ -135,11 +198,20 @@ class OpenSSL implements DriverInterface
         SignatureSecretKey $secretKey,
         array $options = []
     ): string {
-        # openssl_sign()
+        $signature = '';
+        $signed = \openssl_sign(
+            $message,
+            $signature,
+            $secretKey->getPEM(), // We won't need this in the C implementation
+            'sha384WithRSAEncryption'
+        );
+        if ($signed) {
+            return binhex($signature);
+        }
     }
     
     /**
-     * Sign a message, using your secret key
+     * Verify a message, using your public key
      * 
      * @param string|resource $sealed
      * @param EncryptionPublicKey $publicKey
@@ -147,12 +219,17 @@ class OpenSSL implements DriverInterface
      * @return string
      */
     public function verifyAsymmetric(
-        string|resource $message, 
+        $message,
         SignaturePublicKey $publicKey,
         string $signature,
         array $options = []
     ): bool {
-        # openssl_verify()
+        return 1 === \openssl_verify(
+            $message,
+            \hex2bin($signature),
+            $publicKey->getPEM(), // We won't need this in the C implementation
+            'sha384WithRSAEncryption'
+        );
     }
     
     /**
@@ -164,6 +241,9 @@ class OpenSSL implements DriverInterface
         array $options = []
     ): Key {
         # Diffie Hellman, 2048-bit (group 14)
+        # Or ECDH over NIST-P256
+
+        throw new Error('This is not implemented in the prototype. See the comments.');
     }
     
     /**
@@ -220,8 +300,8 @@ class OpenSSL implements DriverInterface
         array $options = []
     ): string {
         return \hash_hmac(
-            $this->config['hash'], 
-            $message,
+            $this->config['hash'],
+            $plaintext,
             $key->getRawBytes(),
             true
         );
@@ -331,7 +411,7 @@ class OpenSSL implements DriverInterface
      * @return Key[]
      */
     public function splitSymmetricKey(
-        Key $key
+        Key $key,
         string $salt
     ): array {
         return [

@@ -123,7 +123,7 @@ class Libsodium implements DriverInterface
      * @return string
      */
     public function verifyAsymmetric(
-        string|resource $message, 
+        $message,
         SignaturePublicKey $publicKey,
         string $signature,
         array $options = []
@@ -283,7 +283,7 @@ class Libsodium implements DriverInterface
      * @return Key[]
      */
     public function splitSymmetricKey(
-        Key $key
+        Key $key,
         string $salt
     ): array {
         return [

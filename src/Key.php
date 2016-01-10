@@ -16,7 +16,17 @@ class Key
         $this->keyMaterial = $keyMaterial;
         $this->driver = $driver;
     }
-    
+
+    /**
+     * Don't leak the key here
+     */
+    public function __debugInfo()
+    {
+        return [
+            'driver' => $this->driver
+        ];
+    }
+
     /**
      * A string of raw binary
      * 
